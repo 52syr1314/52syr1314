@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>立冬礼物</title>
+     <style>
+         /* 页面基础样式：清除默认边距，柔和背景 */
+         body {
+             margin: 0;
+             padding: 0;
+             background-color: #f8f9fa;
+             font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
+             overflow: hidden;
+         }
+         /* 立冬礼物弹窗样式：居中显示 */
+         .gift-popup {
+             position: fixed;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             width: 350px;
+             background-color: #ffffff;
+             border-radius: 12px;
+             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+             z-index: 9999; /* 置顶，不被祝福弹窗覆盖 */
+             transition: opacity 0.3s, transform 0.3s;
+         }
+         /* 弹窗标题栏 */
+         .popup-title {
+             padding: 15px 20px;
+             border-bottom: 1px solid #eee;
+             font-size: 18px;
+             font-weight: 600;
+             color: #333333;
+         }
+         /* 弹窗内容区：调整为垂直布局，按钮横向排列 */
+         .popup-content {
+             padding: 25px 20px;
+             font-size: 16px;
+             color: #666666;
+             display: flex;
+             flex-direction: column;
+             gap: 20px;
+             align-items: center;
+         }
+         /* 按钮容器：横向排列按钮 */
+         .btn-group {
+             display: flex;
+             gap: 15px;
+         }
+         /* 确定按钮样式 */
+         .open-btn {
+             padding: 9px 24px;
+             background-color: #409eff;
+             color: #ffffff;
+             border: none;
+             border-radius: 6px;
+             font-size: 16px;
+             cursor: pointer;
+             transition: background-color 0.3s;
+         }
+         .open-btn:hover {
+             background-color: #3689e6;
+         }
+         /* 祝福弹窗样式：随机位置+漂浮动画 */
+         .blessing-popup {
+             position: fixed;
+             padding: 14px 22px;
+             border-radius: 8px;
+             font-size: 15px;
+             color: #333333;
+             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+             animation: float 3s ease-in-out infinite;
+             z-index: 1; /* 层级低于原弹窗 */
+         }
+         /* 漂浮动画 */
+         @keyframes float {
+             0% { transform: translateY(0); }
+             50% { transform: translateY(-10px); }
+             100% { transform: translateY(0); }
+         }
+         /* 隐藏音频播放器控件 */
+         audio {
+             display: none;
+         }
+     </style>
+ </head>
+ <body>
+     <!-- 立冬礼物弹窗 -->
+     <div class="gift-popup" id="giftPopup">
+         <div class="popup-title">立冬礼物</div>
+         <div class="popup-content">
+             <span>沈依冉宝宝要打开这份立冬礼物吗？</span>
+             <div class="btn-group">
+                 <button class="open-btn" onclick="openGift()">当然要呀～</button>
+                 <button class="open-btn" onclick="openGift()">立刻打开！</button>
+             </div>
+         </div>
+     </div>
+     <!-- 音频元素：预加载，点击确定后播放 -->
+     <audio id="giftAudio" preload="auto">
+         <source src="video_20251107_190233_edit.mp3" type="audio/mpeg">
+         您的浏览器不支持音频播放，请更新浏览器后重试
+     </audio>
+     <script>
+         // 祝福文字列表
+         const blessings = [
+             "我想你了！", "早点休息！", "要相信自己！", "梦想成真！",
+             "保持微笑", "记得多吃点水果", "天冷了，记得多穿点！", "每天都要元气满满",
+             "今天过得开心嘛", "别太劳累，偶尔偷懒也好", "你超棒的", "好好爱自己",
+             "顺顺利利", "别经常熬夜", "学会爱自己，才能更好地爱他人", "多喝温水~",
+             "愿所有烦恼都消失", "记得好好吃饭", "保持好心情", "珍惜每一刻",
+             "立冬安康", "冬日温暖", "万事顺意", "平安喜乐", "暴富暴美", "好运连连",
+             "逢考必过", "祝宝宝永远不会生病", "健康无忧", "笑口常开", "被爱包围", "一路坦途",
+             "我喜欢你", "温柔半两", "从容一生", "人间值得", "未来可期", "不负韶华",
+             "三餐四季", "温暖有趣", "岁岁平安", "年年有余", "初心不改", "热爱生活",
+             "治愈一切", "人间温柔", "好运常在", "福气满满", "神采奕奕", "活力四射",
+             "家庭和睦", "朋友相伴", "学业有成", "天天开心", "美梦成真", "喜乐常伴"
+         ];
+         // 柔和背景色列表
+         const bgColors = [
+             "#FFE4E1", "#FFF0F5", "#E0FFFF", "#FAFAD2", "#D8BFD8",
+             "#BDE3FF", "#F0FFF0", "#FFEBCD", "#F5F0FF", "#E8F5E9",
+             "#FFF8E1", "#FFEBEE", "#E3F2FD", "#F3E5F5", "#E8F5E8",
+             "#FFF3E0", "#FCE4EC", "#E1F5FE", "#F1F8E9", "#F9FBE7"
+         ];
+         // 创建单个祝福弹窗
+         function createBlessing() {
+             const blessDiv = document.createElement("div");
+             blessDiv.className = "blessing-popup";
+             const randomBless = blessings[Math.floor(Math.random() * blessings.length)];
+             const randomBg = bgColors[Math.floor(Math.random() * bgColors.length)];
+             blessDiv.innerText = randomBless;
+             blessDiv.style.backgroundColor = randomBg;
+             const screenWidth = window.innerWidth;
+             const screenHeight = window.innerHeight;
+             const blessWidth = 180;
+             const blessHeight = 40;
+             const randomX = Math.floor(Math.random() * (screenWidth - blessWidth));
+             const randomY = Math.floor(Math.random() * (screenHeight - blessHeight));
+             blessDiv.style.left = `${randomX}px`;
+             blessDiv.style.top = `${randomY}px`;
+             document.body.appendChild(blessDiv);
+             // 10秒后自动移除
+             setTimeout(() => {
+                 blessDiv.remove();
+             }, 36500);
+         }
+         // 循环创建祝福弹窗（每200毫秒一个）
+         function loopBlessings() {
+             for (let i = 0; i < 1000; i++) {
+                 setTimeout(createBlessing, i * 200);
+             }
+         }
+         // 点击按钮事件：关闭弹窗+播放音频+生成祝福
+         function openGift() {
+             // 关闭原弹窗
+             const giftPopup = document.getElementById("giftPopup");
+             giftPopup.style.opacity = 0;
+             giftPopup.style.transform = "translate(-50%, -50%) scale(0.9)";
+             setTimeout(() => {
+                 giftPopup.style.display = "none";
+             }, 300);
+             // 播放音频（失败仅控制台日志，不弹窗）
+             const audio = document.getElementById("giftAudio");
+             audio.play().catch(err => {
+                 console.log("音频播放失败：", err);
+             });
+             // 生成祝福弹窗
+             loopBlessings();
+         }
+     </script>
+ </body>
+ </html>
